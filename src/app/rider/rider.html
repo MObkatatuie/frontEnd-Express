@@ -1,0 +1,50 @@
+<div class="mx-auto max-w-md space-y-3 p-4 text-lg">
+  <h1 class="text-2xl font-bold">ข้าวกล่องส่งด่วน · ใบงานไรเดอร์</h1>
+
+  <input [(ngModel)]="code" (keyup.enter)="search()" placeholder="กรอกเลขใบงาน เช่น 20261010-0001"
+         class="w-full rounded-lg border border-gray-300 p-3 focus:border-blue-500 focus:outline-none" />
+  <button (click)="search()" [disabled]="loading"
+          class="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white disabled:opacity-50">
+    {{ loading ? 'กำลังโหลด...' : 'ดูใบงาน' }}
+  </button>
+
+  @if (error) {
+    <div class="rounded-lg bg-red-50 p-3 text-red-700">{{ error }}</div>
+  }
+
+  @if (job) {
+    <div class="rounded-xl border border-l-8 bg-white p-4" [style.border-left-color]="job.rider.color">
+      <div class="text-sm text-gray-500">{{ job.rider.name }} · {{ job.date }}</div>
+      <div class="my-1 text-xl font-bold">{{ job.pickup }}</div>
+      <div class="text-sm text-gray-600">
+        {{ job.total_stops }} จุด · {{ job.distance_km }} กม. · เสร็จประมาณ {{ job.finish_time }}
+      </div>
+    </div>
+
+    @for (s of job.stops; track s.seq) {
+      <div class="space-y-2 rounded-xl border bg-white p-4">
+        <div class="flex items-center gap-3">
+          <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-bold text-white"
+                [style.background]="job.rider.color">{{ s.seq }}</span>
+          <div>
+            <div class="font-bold">คุณ{{ s.customer_name }}</div>
+            <div class="text-sm text-gray-500">{{ s.boxes }} กล่อง · ถึงประมาณ {{ s.eta }}</div>
+          </div>
+        </div>
+        @if (s.address) { <div class="text-sm text-gray-600">{{ s.address }}</div> }
+        <div class="grid grid-cols-2 gap-2">
+          @if (s.phone) {
+            <a [href]="'tel:' + s.phone" class="rounded-lg border py-2.5 text-center">โทร</a>
+          }
+          <a [href]="s.map_url" target="_blank"
+             class="rounded-lg bg-gray-800 py-2.5 text-center text-white" [class.col-span-2]="!s.phone">นำทาง</a>
+        </div>
+      </div>
+    }
+
+    <a [href]="job.full_route_map_url" target="_blank"
+       class="block w-full rounded-lg bg-green-600 py-3 text-center font-semibold text-white">
+      นำทางทั้งเส้น
+    </a>
+  }
+</div>

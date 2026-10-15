@@ -1,0 +1,13 @@
+<nav class="sticky top-0 z-[1000] border-b bg-white">
+  <div class="mx-auto flex max-w-7xl items-center gap-1 overflow-x-auto px-4 py-2">
+    <span class="mr-3 whitespace-nowrap font-bold">ข้าวกล่องส่งด่วน · ร้าน</span>
+    <a routerLink="/customers" routerLinkActive="bg-blue-600 text-white"
+       class="whitespace-nowrap rounded-lg px-3 py-1.5 hover:bg-gray-100">ลูกค้า</a>
+    <a routerLink="/orders" routerLinkActive="bg-blue-600 text-white"
+       class="whitespace-nowrap rounded-lg px-3 py-1.5 hover:bg-gray-100">ออเดอร์</a>
+    <a routerLink="/dispatch" routerLinkActive="bg-blue-600 text-white"
+       class="whitespace-nowrap rounded-lg px-3 py-1.5 hover:bg-gray-100">จัดเส้นทาง</a>
+  </div>
+</nav>
+
+<router-outlet />

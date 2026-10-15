@@ -1,0 +1,76 @@
+<div class="mx-auto max-w-7xl space-y-4 p-4">
+  <h1 class="text-2xl font-bold">ข้อมูลลูกค้า</h1>
+
+  @if (error) {
+    <div class="rounded-lg bg-red-50 p-3 text-red-700">{{ error }}</div>
+  }
+
+  <div class="grid gap-4 lg:grid-cols-3">
+    <div id="cmap" class="h-[460px] rounded-xl border border-gray-200 lg:col-span-2"></div>
+
+    <form (ngSubmit)="save()" class="space-y-2 rounded-xl border bg-white p-4">
+      <h2 class="font-semibold">{{ editingId ? 'แก้ไขลูกค้า #' + editingId : 'เพิ่มลูกค้าใหม่' }}</h2>
+      <div class="grid grid-cols-2 gap-2">
+        <input [(ngModel)]="form.first_name" name="fn" placeholder="ชื่อ" required class="rounded-lg border p-2" />
+        <input [(ngModel)]="form.last_name" name="ln" placeholder="นามสกุล" required class="rounded-lg border p-2" />
+      </div>
+      <input [(ngModel)]="form.phone" name="ph" placeholder="เบอร์โทร" class="w-full rounded-lg border p-2" />
+      <input [(ngModel)]="form.address" name="ad" placeholder="ที่อยู่" class="w-full rounded-lg border p-2" />
+      <div class="grid grid-cols-2 gap-2">
+        <input [(ngModel)]="form.latitude" name="lat" type="number" step="any" placeholder="latitude" required class="rounded-lg border p-2" />
+        <input [(ngModel)]="form.longitude" name="lng" type="number" step="any" placeholder="longitude" required class="rounded-lg border p-2" />
+      </div>
+      <p class="text-xs text-gray-500">คลิกบนแผนที่เพื่อเลือกพิกัดบ้าน (จุดสีแดง)</p>
+      <div class="flex gap-2">
+        <button type="submit" class="flex-1 rounded-lg bg-blue-600 py-2 font-semibold text-white hover:bg-blue-700">
+          {{ editingId ? 'บันทึก' : 'เพิ่มลูกค้า' }}
+        </button>
+        <button type="button" (click)="reset()" class="rounded-lg border px-4 py-2">ล้าง</button>
+      </div>
+      <button type="button" (click)="nearby()"
+              class="w-full rounded-lg border border-amber-400 bg-amber-50 py-2 text-amber-800">
+        ค้นลูกค้าในรัศมี 1 กม. จากจุดที่เลือก
+      </button>
+    </form>
+  </div>
+
+  <div class="flex flex-wrap items-center gap-2">
+    <input [(ngModel)]="q" (keyup.enter)="search()" placeholder="ค้นจากชื่อหรือนามสกุล"
+           class="flex-1 rounded-lg border p-2" />
+    <button (click)="search()" class="rounded-lg bg-gray-800 px-4 py-2 text-white">ค้นหา</button>
+    <button (click)="q = ''; load()" class="rounded-lg border px-4 py-2">แสดงทั้งหมด</button>
+  </div>
+
+  <div class="text-sm text-gray-500">แสดง: {{ mode }} ({{ customers.length }} คน)</div>
+
+  <div class="overflow-x-auto rounded-xl border bg-white">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-gray-50 text-gray-600">
+        <tr>
+          <th class="p-3">#</th><th class="p-3">ชื่อ-นามสกุล</th><th class="p-3">เบอร์</th>
+          <th class="p-3">ที่อยู่</th><th class="p-3">พิกัด</th>
+          @if (mode === 'ในรัศมี 1 กม.') { <th class="p-3">ระยะ (กม.)</th> }
+          <th class="p-3"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (c of customers; track c.customer_id) {
+          <tr class="border-t hover:bg-gray-50" [class.bg-blue-50]="c.customer_id === editingId">
+            <td class="p-3">{{ c.customer_id }}</td>
+            <td class="p-3 font-medium">{{ c.first_name }} {{ c.last_name }}</td>
+            <td class="p-3">{{ c.phone }}</td>
+            <td class="p-3">{{ c.address }}</td>
+            <td class="p-3 text-xs text-gray-500">{{ c.latitude }}, {{ c.longitude }}</td>
+            @if (mode === 'ในรัศมี 1 กม.') { <td class="p-3">{{ c.distance_km }}</td> }
+            <td class="space-x-2 whitespace-nowrap p-3 text-right">
+              <button (click)="edit(c)" class="text-blue-600 hover:underline">แก้ไข</button>
+              <button (click)="remove(c)" class="text-red-600 hover:underline">ลบ</button>
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="7" class="p-6 text-center text-gray-500">ไม่พบลูกค้า</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

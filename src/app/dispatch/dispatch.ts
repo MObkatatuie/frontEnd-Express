@@ -63,7 +63,7 @@ export class Dispatch implements AfterViewInit, OnDestroy {
       error: () => {},   // 404 = ยังไม่มีแผนที่บันทึก
     });
   }
-
+  
   calculate() {
     this.loading = true;
     this.error = '';
@@ -114,3 +114,4 @@ export class Dispatch implements AfterViewInit, OnDestroy {
     });
   }
 }
+//one

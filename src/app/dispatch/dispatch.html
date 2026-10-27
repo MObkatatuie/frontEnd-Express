@@ -141,10 +141,21 @@
   </div>
 
   @if (selected; as p) {
+    <p class="text-sm text-gray-600" role="status">
+      {{ focusedRiderId === null ? 'แสดงเส้นทางทั้งหมด · คลิกการ์ดเพื่อดูเฉพาะไรเดอร์' : 'แสดงเฉพาะไรเดอร์ที่เลือก · คลิกการ์ดเดิมอีกครั้งเพื่อแสดงทั้งหมด' }}
+    </p>
     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       @for (r of p.routes; track r.rider.rider_id) {
         <div
-          class="rounded-xl border-l-8 border bg-white p-3"
+          class="rider-card rounded-xl border-l-8 border bg-white p-3"
+          role="button"
+          tabindex="0"
+          [attr.aria-pressed]="focusedRiderId === r.rider.rider_id"
+          [attr.aria-label]="'แสดงเส้นทาง ' + r.rider.name"
+          [class.rider-card-selected]="focusedRiderId === r.rider.rider_id"
+          (click)="toggleRider(r.rider.rider_id)"
+          (keydown.enter)="toggleRider(r.rider.rider_id)"
+          (keydown.space)="$event.preventDefault(); toggleRider(r.rider.rider_id)"
           [style.border-left-color]="r.rider.color"
         >
           <div class="flex justify-between font-semibold">

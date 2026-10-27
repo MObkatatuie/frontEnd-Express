@@ -27,6 +27,12 @@ export class Dispatch implements AfterViewInit, OnDestroy {
 
   routeMetrics: Record<string, RoadRoute> = {};
   routingBusy = false;
+  focusedRiderId: number | null = null;
+
+  toggleRider(riderId: number) {
+    this.focusedRiderId = this.focusedRiderId === riderId ? null : riderId;
+    this.drawPlan(this.selected);
+  }
 
   private map!: L.Map;
   private layer?: L.LayerGroup;
@@ -92,6 +98,7 @@ export class Dispatch implements AfterViewInit, OnDestroy {
         const saved = { ...res, label: 'แผนที่ยืนยันแล้ว (' + res.route_date + ')', saved: true };
         this.store.plans = [];
         this.store.selected = saved;
+        this.focusedRiderId = null;
 
         this.store.jobs = (res.routes ?? []).map((r: any) => ({
           job_code: r.job_code,
@@ -138,6 +145,7 @@ export class Dispatch implements AfterViewInit, OnDestroy {
   }
 
   select(plan: any) {
+    this.focusedRiderId = null;
     this.store.selected = plan;
     this.store.jobs = [];
     void this.drawPlan(plan);
@@ -256,7 +264,17 @@ export class Dispatch implements AfterViewInit, OnDestroy {
       [SHOP_LAT, SHOP_LNG]
     ];
 
-    const routes = plan.routes ?? [];
+    const allRoutes = plan.routes ?? [];
+    for (const r of allRoutes) {
+      if (Array.isArray(r.path) && r.path.length >= 2) {
+        this.routeMetrics[String(r.rider?.rider_id ?? r.rider?.name)] = {
+          coordinates: r.path, distanceKm: r.distance_km, durationMin: r.time_min
+        };
+      }
+    }
+    const routes = this.focusedRiderId === null
+      ? allRoutes
+      : allRoutes.filter((r: any) => r.rider?.rider_id === this.focusedRiderId);
 
     // สร้างรายการหมุดทั้งหมดก่อน เพื่อหาออเดอร์ที่พิกัดซ้ำกัน
     const markerItems: Array<{

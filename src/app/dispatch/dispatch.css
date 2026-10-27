@@ -1,0 +1,4 @@
+.rider-card { cursor: pointer; transition: background-color 120ms, box-shadow 120ms; }
+.rider-card:hover { background-color: #f8fafc; }
+.rider-card-selected { background-color: #eff6ff; box-shadow: 0 0 0 2px #2563eb; }
+.rider-card:focus-visible { outline: 3px solid #2563eb; outline-offset: 3px; }

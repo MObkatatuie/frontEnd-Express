@@ -1,3 +1,41 @@
-/* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
 
-@import 'tailwindcss';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  font-family: 'Prompt', sans-serif;
+  background: #f5f7f6;
+  color: #1f2937;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+/* แผนที่ Leaflet ต้องมีความสูง */
+#cmap,
+#omap,
+#map {
+  width: 100%;
+  height: 380px;
+  min-height: 300px;
+  z-index: 0;
+}
+
+.leaflet-container {
+  font-family: 'Prompt', sans-serif;
+  border-radius: 12px;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

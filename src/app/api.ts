@@ -12,7 +12,7 @@ export class Api {
     clearMock() { return this.http.delete<any>(`${BASE}/orders/mock`); }
     addBox(id: number) { return this.http.post<any>(`${BASE}/orders/${id}/boxes`, { amount: 1 }); }
     removeBox(id: number) { return this.http.delete<any>(`${BASE}/orders/${id}/boxes?amount=1`); }
-    plans() { return this.http.post<any>(`${BASE}/dispatch/plans?count=3`, {}); }
+    plans() { return this.http.post<any>(`${BASE}/dispatch/plans?count=1`, {}); }
     confirm(token: string) { return this.http.post<any>(`${BASE}/dispatch/confirm`, { plan_token: token }); }
     job(code: string) { return this.http.get<any>(`${BASE}/jobs/${code}`); }
     //customer

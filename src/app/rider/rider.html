@@ -21,6 +21,11 @@
       </div>
     </div>
 
+    @if (job.path?.length) {
+      <app-road-map [path]="job.path" [stops]="job.stops" [color]="job.rider.color" [shop]="job.shop" />
+      <p class="text-sm text-gray-500">เส้นทางตามถนน · เวลาถึงเป็นค่าประมาณ ไม่รวมเวลาจอดส่งและการจราจรสด</p>
+    }
+
     @for (s of job.stops; track s.seq) {
       <div class="space-y-2 rounded-xl border bg-white p-4">
         <div class="flex items-center gap-3">

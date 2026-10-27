@@ -1,21 +1,11 @@
-
-import {
-  Component,
-  AfterViewInit,
-  OnDestroy,
-  ChangeDetectorRef,
-  inject
-} from '@angular/core';
-
+import { Component, AfterViewInit, OnDestroy, ChangeDetectorRef, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DecimalPipe } from '@angular/common';
 import * as L from 'leaflet';
 
 import { Api } from '../api';
 import { DispatchStore } from './dispatch-store';
-import {
-  RoadRoutingService,
-  RoadRoute
-} from '../road-routing.service';
+import type { RoadRoute } from '../road-routing.service';
 
 const SHOP_LAT = 16.24486;
 const SHOP_LNG = 103.24784;
@@ -32,8 +22,7 @@ const MARKER_OFFSET = 0.00012;
 export class Dispatch implements AfterViewInit, OnDestroy {
   private api = inject(Api);
   private cdr = inject(ChangeDetectorRef);
-  private routing = inject(RoadRoutingService);
-
+  private destroyRef = inject(DestroyRef);
   store = inject(DispatchStore);
 
   routeMetrics: Record<string, RoadRoute> = {};
@@ -44,6 +33,7 @@ export class Dispatch implements AfterViewInit, OnDestroy {
 
   loading = false;
   error = '';
+  calculating = false;
 
   get plans() {
     return this.store.plans;
@@ -66,7 +56,7 @@ export class Dispatch implements AfterViewInit, OnDestroy {
     L.tileLayer(
       'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
       {
-        attribution: '© OpenStreetMap'
+        attribution: '© OpenStreetMap contributors · Routing: OSRM'
       }
     ).addTo(this.map);
 
@@ -77,6 +67,7 @@ export class Dispatch implements AfterViewInit, OnDestroy {
     } else {
       this.loadSaved();
     }
+    this.cdr.detectChanges();
   }
 
   ngOnDestroy() {
@@ -89,18 +80,16 @@ export class Dispatch implements AfterViewInit, OnDestroy {
       'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้';
 
     this.loading = false;
+    this.calculating = false;
     this.cdr.markForCheck();
   };
 
   loadSaved() {
-    this.api.current().subscribe({
+    this.loading = true;
+    this.api.current().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: res => {
-        const saved = {
-          ...res,
-          label: `แผนที่ยืนยันแล้ว (${res.route_date})`,
-          saved: true
-        };
-
+        this.loading = false;
+        const saved = { ...res, label: 'แผนที่ยืนยันแล้ว (' + res.route_date + ')', saved: true };
         this.store.plans = [];
         this.store.selected = saved;
 
@@ -113,19 +102,27 @@ export class Dispatch implements AfterViewInit, OnDestroy {
         void this.drawPlan(saved);
         this.cdr.markForCheck();
       },
-      error: () => {
-        // อาจยังไม่มีแผนที่บันทึกไว้
-      }
+      error: err => {
+        this.loading = false;
+        if (err.status !== 404) this.fail(err);
+        this.cdr.markForCheck();
+      },
     });
   }
 
   calculate() {
+    if (this.loading) return;
     this.loading = true;
+    this.calculating = true;
     this.error = '';
-
-    this.api.plans().subscribe({
+    this.api.plans().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: res => {
-        this.store.plans = res.plans ?? [];
+        if (!res.plans?.[0]?.routes?.every((r: any) => r.path?.length >= 2)) {
+          this.fail({ error: { error: 'ไม่พบเส้นทางถนนครบทุกไรเดอร์ กรุณาคำนวณใหม่' } });
+          return;
+        }
+        this.calculating = false;
+        this.store.plans = res.plans;
         this.loading = false;
 
         if (this.store.plans.length) {
@@ -185,6 +182,12 @@ export class Dispatch implements AfterViewInit, OnDestroy {
     });
   }
 
+  private escapeHtml(value: unknown): string {
+    const element = document.createElement('span');
+    element.textContent = String(value ?? '-');
+    return element.innerHTML;
+  }
+
   private locationKey(lat: number, lng: number): string {
     return `${lat.toFixed(6)},${lng.toFixed(6)}`;
   }
@@ -237,7 +240,7 @@ export class Dispatch implements AfterViewInit, OnDestroy {
       .addTo(this.map);
   }
 
-  async drawPlan(plan: any) {
+  drawPlan(plan: any) {
     if (!this.map || !plan) {
       return;
     }
@@ -310,54 +313,20 @@ export class Dispatch implements AfterViewInit, OnDestroy {
       const color = r.rider?.color || '#2563eb';
       const riderName = r.rider?.name || 'ไรเดอร์';
 
-      const points = [
-        { lat: SHOP_LAT, lng: SHOP_LNG },
-        ...stops
-          .map((s: any) => this.getCustomerPoint(s))
-          .filter(
-            (p: { lat: number; lng: number } | null): p is {
-              lat: number;
-              lng: number;
-            } => p !== null
-          )
-      ];
-
-      if (points.length >= 2) {
-        try {
-          const road = await this.routing.route(points);
-
-          this.routeMetrics[String(r.rider?.rider_id ?? riderName)] =
-            road;
-
-          L.polyline(road.coordinates, {
-            color,
-            weight: 5,
-            opacity: 0.9
-          })
-            .bindPopup(
-              `${riderName}: ` +
-              `${road.distanceKm.toFixed(2)} กม. · ` +
-              `${Math.round(road.durationMin)} นาทีโดยประมาณ`
-            )
-            .addTo(this.layer);
-
-          bounds.push(...road.coordinates);
-        } catch (err: any) {
-          // หากคำนวณถนนไม่สำเร็จ ให้ลองใช้ path เดิมจาก Backend
-          if (Array.isArray(r.path) && r.path.length > 1) {
-            L.polyline(r.path, {
-              color,
-              weight: 4,
-              dashArray: '8 8'
-            }).addTo(this.layer);
-
-            bounds.push(...r.path);
-          }
-
-          this.error =
-            err?.message ||
-            'คำนวณเส้นทางไม่สำเร็จ';
-        }
+      if (Array.isArray(r.path) && r.path.length >= 2) {
+        const road: RoadRoute = {
+          coordinates: r.path,
+          distanceKm: r.distance_km,
+          durationMin: r.time_min
+        };
+        this.routeMetrics[String(r.rider?.rider_id ?? riderName)] = road;
+        const popup = document.createElement('span');
+        popup.textContent = riderName + ': ' + road.distanceKm.toFixed(2) + ' กม. · ' + road.durationMin.toFixed(1) + ' นาทีโดยประมาณ';
+        L.polyline(road.coordinates, { color, weight: 5, opacity: 0.9 })
+          .bindPopup(popup).addTo(this.layer);
+        bounds.push(...road.coordinates);
+      } else {
+        this.error = 'ไม่พบเส้นทางถนนจากเซิร์ฟเวอร์ กรุณาคำนวณใหม่';
       }
     }
 
@@ -399,11 +368,11 @@ export class Dispatch implements AfterViewInit, OnDestroy {
         color,
         `
           <b>จุดส่งที่ ${item.sequence}</b><br>
-          ลูกค้า: ${s.customer?.name ?? '-'}<br>
-          ออเดอร์: ${s.order_id ?? '-'}<br>
-          ไรเดอร์: ${riderName}<br>
-          จำนวน: ${s.boxes ?? '-'} กล่อง<br>
-          เวลา: ${s.eta ?? '-'}
+          ลูกค้า: ${this.escapeHtml(s.customer?.name ?? '-')}<br>
+          ออเดอร์: ${this.escapeHtml(s.order_id ?? '-')}<br>
+          ไรเดอร์: ${this.escapeHtml(riderName)}<br>
+          จำนวน: ${this.escapeHtml(s.boxes ?? '-')} กล่อง<br>
+          เวลา: ${this.escapeHtml(s.eta ?? '-')}
           ${
             group.length > 1
               ? '<br><b>พิกัดนี้มีหลายออเดอร์</b>'
@@ -438,15 +407,10 @@ export class Dispatch implements AfterViewInit, OnDestroy {
   }
 
   confirm() {
-    if (!this.store.selected) {
-      return;
-    }
-
+    if (this.loading || !this.selected || this.selected.saved) return;
+    this.error = '';
     this.loading = true;
-
-    this.api.confirm(
-      this.store.selected.plan_token
-    ).subscribe({
+    this.api.confirm(this.store.selected.plan_token).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: res => {
         this.store.jobs = res.jobs;
 
@@ -462,3 +426,4 @@ export class Dispatch implements AfterViewInit, OnDestroy {
     });
   }
 }
+//one

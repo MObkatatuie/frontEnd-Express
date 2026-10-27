@@ -69,32 +69,6 @@
     </p>
   }
 
-  <!-- Plan selection -->
-  @if (plans.length) {
-    <section class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-      <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 class="font-bold text-gray-900">แผนการจัดส่ง</h2>
-        <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-          {{ plans.length }} แผน
-        </span>
-      </div>
-
-      <div class="flex flex-wrap gap-2">
-        @for (p of plans; track p.plan_token) {
-          <button
-            (click)="select(p)"
-            [class]="p === selected
-              ? 'border-emerald-600 bg-emerald-50 font-semibold text-emerald-800 ring-2 ring-emerald-100'
-              : 'border-gray-200 bg-white text-gray-700 hover:border-emerald-300 hover:bg-gray-50'"
-            class="rounded-xl border px-4 py-2.5 text-sm transition"
-          >
-            <span class="mr-1 text-gray-400">#{{ p.plan_no }}</span>
-            {{ p.label }}
-          </button>
-        }
-      </div>
-    </section>
-  }
 
   <!-- Map and selected plan -->
   <div class="grid items-start gap-5 lg:grid-cols-3">

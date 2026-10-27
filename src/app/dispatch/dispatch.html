@@ -1,22 +1,42 @@
 <div class="mx-auto max-w-7xl p-4 space-y-4">
   <div class="flex flex-wrap items-center justify-between gap-3">
     <h1 class="text-2xl font-bold">จัดเส้นทางจัดส่ง</h1>
-    <button (click)="calculate()" [disabled]="loading"
-            class="rounded-lg bg-blue-600 px-5 py-2.5 font-semibold text-white hover:bg-blue-700 disabled:opacity-50">
-      {{ loading ? 'กำลังคำนวณ...' : (plans.length ? 'คำนวณใหม่' : 'คำนวณเส้นทาง') }}
+
+    <button
+      (click)="calculate()"
+      [disabled]="loading"
+      class="rounded-lg bg-blue-600 px-5 py-2.5 font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+    >
+      {{
+        loading
+          ? 'กำลังคำนวณ...'
+          : (plans.length ? 'คำนวณใหม่' : 'คำนวณเส้นทาง')
+      }}
     </button>
   </div>
 
   @if (error) {
-    <div class="rounded-lg bg-red-50 p-3 text-red-700">{{ error }}</div>
+    <div class="rounded-lg bg-amber-50 p-3 text-amber-800">
+      {{ error }}
+    </div>
+  }
+
+  @if (routingBusy) {
+    <div class="rounded-lg bg-blue-50 p-3 text-blue-800">
+      กำลังคำนวณเส้นทางตามถนนจริงด้วย OSRM...
+    </div>
   }
 
   @if (plans.length) {
     <div class="flex flex-wrap gap-2">
       @for (p of plans; track p.plan_token) {
-        <button (click)="select(p)"
-                class="rounded-lg border px-4 py-2 text-sm"
-                [class]="p === selected ? 'border-blue-600 bg-blue-50 font-semibold text-blue-700' : 'border-gray-300 bg-white hover:bg-gray-50'">
+        <button
+          (click)="select(p)"
+          class="rounded-lg border px-4 py-2 text-sm"
+          [class]="p === selected
+            ? 'border-blue-600 bg-blue-50 font-semibold text-blue-700'
+            : 'border-gray-300 bg-white hover:bg-gray-50'"
+        >
           แผน {{ p.plan_no }}: {{ p.label }}
         </button>
       }
@@ -24,61 +44,117 @@
   }
 
   <div class="grid gap-4 lg:grid-cols-3">
-    <div id="map" class="h-[520px] rounded-xl border border-gray-200 lg:col-span-2"></div>
+    <div
+      id="map"
+      class="h-[520px] rounded-xl border border-gray-200 lg:col-span-2"
+    ></div>
 
     <div class="space-y-3">
       @if (selected; as p) {
-        <div class="text-sm font-semibold text-gray-600">{{ p.label }}</div>
+        <div class="text-sm font-semibold text-gray-600">
+          {{ p.label }}
+        </div>
+
         <div class="grid grid-cols-2 gap-3">
           <div class="rounded-xl border bg-white p-3">
             <div class="text-sm text-gray-500">รายได้</div>
-            <div class="text-xl font-bold">{{ p.summary.revenue | number:'1.0-2' }} ฿</div>
+            <div class="text-xl font-bold">
+              {{ p.summary.revenue | number:'1.0-2' }} ฿
+            </div>
           </div>
+
           <div class="rounded-xl border bg-white p-3">
             <div class="text-sm text-gray-500">ต้นทุนอาหาร</div>
-            <div class="text-xl font-bold">{{ p.summary.food_cost | number:'1.0-2' }} ฿</div>
+            <div class="text-xl font-bold">
+              {{ p.summary.food_cost | number:'1.0-2' }} ฿
+            </div>
           </div>
+
           <div class="rounded-xl border bg-white p-3">
             <div class="text-sm text-gray-500">ค่าไรเดอร์</div>
-            <div class="text-xl font-bold">{{ p.summary.rider_fee | number:'1.0-2' }} ฿</div>
+            <div class="text-xl font-bold">
+              {{ p.summary.rider_fee | number:'1.0-2' }} ฿
+            </div>
           </div>
-          <div class="rounded-xl border p-3"
-               [class]="p.summary.profit < 0 ? 'border-red-300 bg-red-50' : 'border-green-300 bg-green-50'">
-            <div class="text-sm text-gray-500">{{ p.summary.result }}</div>
-            <div class="text-xl font-bold" [class]="p.summary.profit < 0 ? 'text-red-700' : 'text-green-700'">
+
+          <div
+            class="rounded-xl border p-3"
+            [class]="p.summary.profit < 0
+              ? 'border-red-300 bg-red-50'
+              : 'border-green-300 bg-green-50'"
+          >
+            <div class="text-sm text-gray-500">
+              {{ p.summary.result }}
+            </div>
+
+            <div
+              class="text-xl font-bold"
+              [class]="p.summary.profit < 0
+                ? 'text-red-700'
+                : 'text-green-700'"
+            >
               {{ p.summary.profit | number:'1.0-2' }} ฿
             </div>
           </div>
         </div>
 
         <div class="rounded-xl border bg-white p-3 text-sm">
-          ไรเดอร์ {{ p.summary.riders_used }} คน · {{ p.summary.orders }} ออเดอร์ · {{ p.summary.boxes }} กล่อง<br />
-          ออก {{ p.summary.start_time }} · ส่งเสร็จ {{ p.summary.all_delivered_by }}
-          <span [class]="p.summary.all_on_time ? 'text-green-700' : 'text-red-700 font-semibold'">
-            ({{ p.summary.all_on_time ? 'ทันก่อน ' + p.summary.deadline : 'เกินเวลา!' }})
+          ไรเดอร์ {{ p.summary.riders_used }} คน ·
+          {{ p.summary.orders }} ออเดอร์ ·
+          {{ p.summary.boxes }} กล่อง
+
+          <br />
+
+          ออก {{ p.summary.start_time }} ·
+          ส่งเสร็จ {{ p.summary.all_delivered_by }}
+
+          <span
+            [class]="p.summary.all_on_time
+              ? 'text-green-700'
+              : 'text-red-700 font-semibold'"
+          >
+            {{
+              p.summary.all_on_time
+                ? '(ทันก่อน ' + p.summary.deadline + ')'
+                : '(เกินเวลา!)'
+            }}
           </span>
         </div>
 
         @if (!p.saved) {
-          <button (click)="confirm()" [disabled]="loading"
-                  class="w-full rounded-lg bg-green-600 py-2.5 font-semibold text-white hover:bg-green-700 disabled:opacity-50">
+          <button
+            (click)="confirm()"
+            [disabled]="loading"
+            class="w-full rounded-lg bg-green-600 py-2.5 font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+          >
             ยืนยันแผนนี้
           </button>
         }
 
         @if (jobs.length) {
-          <div class="rounded-xl border border-green-300 bg-green-50 p-3 text-sm">
-            <div class="mb-1 font-semibold">บันทึกแล้ว เลขใบงาน:</div>
+          <div
+            class="rounded-xl border border-green-300 bg-green-50 p-3 text-sm"
+          >
+            <div class="mb-1 font-semibold">
+              บันทึกแล้ว เลขใบงาน:
+            </div>
+
             @for (j of jobs; track j.job_code) {
               <div class="flex items-center gap-2">
-                <span class="h-3 w-3 rounded-full" [style.background]="j.color"></span>
+                <span
+                  class="h-3 w-3 rounded-full"
+                  [style.background]="j.color"
+                ></span>
+
                 {{ j.rider }}: <b>{{ j.job_code }}</b>
               </div>
             }
           </div>
         }
       } @else {
-        <div class="rounded-xl border border-dashed p-6 text-center text-gray-500">
+        <div
+          class="rounded-xl border border-dashed p-6 text-center text-gray-500"
+        >
           กด "คำนวณเส้นทาง" เพื่อดูแผนจัดส่ง
         </div>
       }
@@ -88,19 +164,45 @@
   @if (selected; as p) {
     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       @for (r of p.routes; track r.rider.rider_id) {
-        <div class="rounded-xl border-l-8 border bg-white p-3" [style.border-left-color]="r.rider.color">
+        <div
+          class="rounded-xl border-l-8 border bg-white p-3"
+          [style.border-left-color]="r.rider.color"
+        >
           <div class="flex justify-between font-semibold">
             <span>{{ r.rider.name }}</span>
-            <span [class]="r.money.profit < 0 ? 'text-red-700' : 'text-green-700'">
+
+            <span
+              [class]="r.money.profit < 0
+                ? 'text-red-700'
+                : 'text-green-700'"
+            >
               {{ r.money.profit | number:'1.0-2' }} ฿
             </span>
           </div>
+
           <div class="text-sm text-gray-500">
-            {{ r.boxes }} กล่อง · {{ r.distance_km }} กม. · เสร็จ {{ r.finish_time }}
+            {{ r.boxes }} กล่อง · เสร็จ {{ r.finish_time }}
           </div>
+
+          @if (routeMetrics[r.rider.rider_id]; as metric) {
+            <div class="mt-1 text-sm font-semibold text-blue-700">
+              ระยะทางถนน:
+              {{ metric.distanceKm | number:'1.2-2' }} กม.
+              · {{ metric.durationMin | number:'1.0-0' }} นาทีโดยประมาณ
+            </div>
+          } @else {
+            <div class="mt-1 text-sm text-gray-500">
+              ระยะทางถนนจะปรากฏเมื่อคำนวณสำเร็จ
+            </div>
+          }
+
           <ol class="mt-2 list-decimal pl-5 text-sm">
             @for (s of r.stops; track s.order_id) {
-              <li>{{ s.customer.name }} ({{ s.boxes }} กล่อง) {{ s.eta }}</li>
+              <li>
+                {{ s.customer.name }}
+                ({{ s.boxes }} กล่อง)
+                {{ s.eta }}
+              </li>
             }
           </ol>
         </div>

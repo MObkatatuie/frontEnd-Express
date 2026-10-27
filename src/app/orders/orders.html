@@ -1,125 +1,307 @@
 <div class="mx-auto max-w-7xl space-y-4 p-4">
-    <h1 class="text-2xl font-bold">รายการสั่งซื้อ</h1>
+  <h1 class="text-2xl font-bold">รายการสั่งซื้อ</h1>
 
-    @if (error) { <div class="rounded-lg bg-red-50 p-3 text-red-700">{{ error }}</div> }
-    @if (message) { <div class="rounded-lg bg-green-50 p-3 text-green-700">{{ message }}</div> }
+  @if (error) {
+    <div class="rounded-lg bg-red-50 p-3 text-red-700">
+      {{ error }}
+    </div>
+  }
 
-    <div class="grid gap-4 lg:grid-cols-3">
-        <div id="omap" class="h-[420px] rounded-xl border border-gray-200 lg:col-span-2"></div>
+  @if (message) {
+    <div class="rounded-lg bg-green-50 p-3 text-green-700">
+      {{ message }}
+    </div>
+  }
 
-        <div class="space-y-3">
-            <div class="space-y-2 rounded-xl border bg-white p-4">
-                <h2 class="font-semibold">จำลองออเดอร์</h2>
-                <div class="flex gap-2">
-                    <input type="number" min="20" max="30" [(ngModel)]="mockCount" class="w-24 rounded-lg border p-2" />
-                    <button (click)="mock()" [disabled]="busy"
-                        class="flex-1 rounded-lg bg-purple-600 py-2 font-semibold text-white disabled:opacity-50">จำลอง
-                        (20-30)</button>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <button (click)="clearMock()" [disabled]="busy"
-                        class="rounded-lg border border-purple-300 py-2 text-sm text-purple-700">ล้างออเดอร์จำลอง</button>
-                    <button (click)="deleteReal()" [disabled]="busy"
-                        class="rounded-lg border border-red-300 py-2 text-sm text-red-700">ลบออเดอร์จริง</button>
-                </div>
-            </div>
+  <div class="grid gap-4 lg:grid-cols-3">
+    <div class="space-y-2 lg:col-span-2">
+      <div
+        id="omap"
+        class="h-[420px] rounded-xl border border-gray-200"
+      ></div>
 
-            <div class="space-y-2 rounded-xl border bg-white p-4">
-                <h2 class="font-semibold">เพิ่มออเดอร์</h2>
-                <select [(ngModel)]="newCustomerId" class="w-full rounded-lg border p-2">
-                    <option [ngValue]="null">-- เลือกลูกค้า --</option>
-                    @for (c of customers; track c.customer_id) {
-                    <option [ngValue]="c.customer_id">{{ c.first_name }} {{ c.last_name }}</option>
-                    }
-                </select>
-                <div class="flex gap-2">
-                    <select [(ngModel)]="newBoxes" class="w-24 rounded-lg border p-2">
-                        <option [ngValue]="1">1 กล่อง</option>
-                        <option [ngValue]="2">2 กล่อง</option>
-                        <option [ngValue]="3">3 กล่อง</option>
-                    </select>
-                    <button (click)="add()" [disabled]="busy"
-                        class="flex-1 rounded-lg bg-blue-600 py-2 font-semibold text-white disabled:opacity-50">เพิ่ม</button>
-                </div>
-            </div>
+      @if (selectedRoute; as sr) {
+        <div
+          class="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-950"
+        >
+          <div class="font-semibold">
+            เส้นทางถนน: ร้าน → {{ sr.customerName }}
+            (ออเดอร์ #{{ sr.orderId }})
+          </div>
 
-            <div class="space-y-2 rounded-xl border bg-white p-4">
-                <h2 class="font-semibold">ค้นในรัศมี 2 กม.</h2>
-                <p class="text-sm text-gray-500">คลิกบนแผนที่เพื่อเลือกจุด: {{ pointText }}</p>
-                <div class="grid grid-cols-2 gap-2">
-                    <button (click)="nearby()"
-                        class="rounded-lg border border-amber-400 bg-amber-50 py-2 text-amber-800">ค้นหา</button>
-                    <button (click)="load()" class="rounded-lg border py-2">แสดงทั้งหมด</button>
-                </div>
-            </div>
+          <div class="mt-1">
+            ระยะทาง
+            {{ sr.route.distanceKm | number:'1.2-2' }} กม.
+            · เวลาโดยประมาณ
+            {{ sr.route.durationMin | number:'1.0-0' }} นาที
+          </div>
+
+          <button
+            (click)="clearRoute()"
+            class="mt-2 rounded border border-blue-300 px-3 py-1"
+          >
+            ล้างเส้นทาง
+          </button>
         </div>
+      }
+
+      @if (routeLoading) {
+        <div class="text-sm text-blue-700">
+          กำลังคำนวณเส้นทางถนน...
+        </div>
+      }
     </div>
 
-    <div class="flex flex-wrap gap-4 text-sm text-gray-600">
-        <span>แสดง: <b>{{ mode }}</b></span>
-        <span>{{ orders.length }} ออเดอร์ · {{ totalBoxes }} กล่อง · {{ totalBoxes * 65 | number }} ฿</span>
-        <span><span class="inline-block h-3 w-3 rounded-full bg-purple-600"></span> จำลอง</span>
-        <span><span class="inline-block h-3 w-3 rounded-full bg-red-600"></span> จริง</span>
-    </div>
+    <div class="space-y-3">
+      <div class="space-y-2 rounded-xl border bg-white p-4">
+        <h2 class="font-semibold">จำลองออเดอร์</h2>
 
-    <div class="overflow-x-auto rounded-xl border bg-white">
-        <table class="w-full text-left text-sm">
-            <thead class="bg-gray-50 text-gray-600">
-                <tr>
-                    <th class="p-3">#</th>
-                    <th class="p-3">ลูกค้า</th>
-                    <th class="p-3">เวลาสั่ง</th>
-                    <th class="p-3">กล่อง</th>
-                    <th class="p-3">ราคา</th>
-                    <th class="p-3">สถานะ</th>
-                    @if (mode === 'ในรัศมี 2 กม.') { <th class="p-3">ระยะ (กม.)</th> }
-                    <th class="p-3"></th>
-                </tr>
-            </thead>
-            <tbody>
-                @for (o of orders; track o.order_id) {
-                <tr class="border-t hover:bg-gray-50">
-                    <td class="p-3">
-                        {{ o.order_id }}
-                        @if (o.is_mock) { <span
-                            class="ml-1 rounded bg-purple-100 px-1.5 text-xs text-purple-700">mock</span> }
-                    </td>
-                    <td class="p-3">{{ o.customer.first_name }} {{ o.customer.last_name }}</td>
-                    <td class="p-3 text-gray-500">{{ o.order_date }}</td>
-                    <td class="p-3">
-                        <div class="flex items-center gap-1">
-                            <button (click)="minus(o)" [disabled]="o.quantity_boxes <= 1"
-                                class="h-7 w-7 rounded border disabled:opacity-30">−</button>
-                            <select [ngModel]="o.quantity_boxes" (ngModelChange)="setBoxes(o, $event)"
-                                class="rounded border p-1">
-                                <option [ngValue]="1">1</option>
-                                <option [ngValue]="2">2</option>
-                                <option [ngValue]="3">3</option>
-                            </select>
-                            <button (click)="plus(o)" [disabled]="o.quantity_boxes >= 3"
-                                class="h-7 w-7 rounded border disabled:opacity-30">+</button>
-                        </div>
-                    </td>
-                    <td class="p-3">{{ o.total_price }} ฿</td>
-                    <td class="p-3">
-                        @if (o.route_id) {
-                        <span class="rounded bg-green-100 px-2 py-0.5 text-xs text-green-700">จัดแล้ว จุดที่ {{
-                            o.stop_seq }}</span>
-                        } @else {
-                        <span class="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600">รอจัด</span>
-                        }
-                    </td>
-                    @if (mode === 'ในรัศมี 2 กม.') { <td class="p-3">{{ o.distance_km }}</td> }
-                    <td class="p-3 text-right">
-                        <button (click)="remove(o)" class="text-red-600 hover:underline">ลบ</button>
-                    </td>
-                </tr>
-                } @empty {
-                <tr>
-                    <td colspan="8" class="p-6 text-center text-gray-500">ยังไม่มีออเดอร์ ลองกด "จำลอง"</td>
-                </tr>
-                }
-            </tbody>
-        </table>
+        <div class="flex gap-2">
+          <input
+            type="number"
+            min="20"
+            max="30"
+            [(ngModel)]="mockCount"
+            class="w-24 rounded-lg border p-2"
+          />
+
+          <button
+            (click)="mock()"
+            [disabled]="busy"
+            class="flex-1 rounded-lg bg-purple-600 py-2 font-semibold text-white disabled:opacity-50"
+          >
+            จำลอง (20-30)
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <button
+            (click)="clearMock()"
+            [disabled]="busy"
+            class="rounded-lg border border-purple-300 py-2 text-sm text-purple-700"
+          >
+            ล้างออเดอร์จำลอง
+          </button>
+
+          <button
+            (click)="deleteReal()"
+            [disabled]="busy"
+            class="rounded-lg border border-red-300 py-2 text-sm text-red-700"
+          >
+            ลบออเดอร์จริง
+          </button>
+        </div>
+      </div>
+
+      <div class="space-y-2 rounded-xl border bg-white p-4">
+        <h2 class="font-semibold">เพิ่มออเดอร์</h2>
+
+        <select
+          [(ngModel)]="newCustomerId"
+          class="w-full rounded-lg border p-2"
+        >
+          <option [ngValue]="null">-- เลือกลูกค้า --</option>
+
+          @for (c of customers; track c.customer_id) {
+            <option [ngValue]="c.customer_id">
+              {{ c.first_name }} {{ c.last_name }}
+            </option>
+          }
+        </select>
+
+        <div class="flex gap-2">
+          <select
+            [(ngModel)]="newBoxes"
+            class="w-24 rounded-lg border p-2"
+          >
+            <option [ngValue]="1">1 กล่อง</option>
+            <option [ngValue]="2">2 กล่อง</option>
+            <option [ngValue]="3">3 กล่อง</option>
+          </select>
+
+          <button
+            (click)="add()"
+            [disabled]="busy"
+            class="flex-1 rounded-lg bg-blue-600 py-2 font-semibold text-white disabled:opacity-50"
+          >
+            เพิ่ม
+          </button>
+        </div>
+      </div>
+
+      <div class="space-y-2 rounded-xl border bg-white p-4">
+        <h2 class="font-semibold">ค้นในรัศมี 2 กม.</h2>
+
+        <p class="text-sm text-gray-500">
+          คลิกบนแผนที่เพื่อเลือกจุด: {{ pointText }}
+        </p>
+
+        <div class="grid grid-cols-2 gap-2">
+          <button
+            (click)="nearby()"
+            class="rounded-lg border border-amber-400 bg-amber-50 py-2 text-amber-800"
+          >
+            ค้นหา
+          </button>
+
+          <button
+            (click)="load()"
+            class="rounded-lg border py-2"
+          >
+            แสดงทั้งหมด
+          </button>
+        </div>
+      </div>
     </div>
+  </div>
+
+  <div class="flex flex-wrap gap-4 text-sm text-gray-600">
+    <span>แสดง: <b>{{ mode }}</b></span>
+
+    <span>
+      {{ orders.length }} ออเดอร์ ·
+      {{ totalBoxes }} กล่อง ·
+      {{ totalBoxes * 65 | number }} ฿
+    </span>
+
+    <span>
+      <span class="inline-block h-3 w-3 rounded-full bg-purple-600"></span>
+      จำลอง
+    </span>
+
+    <span>
+      <span class="inline-block h-3 w-3 rounded-full bg-red-600"></span>
+      จริง
+    </span>
+  </div>
+
+  <div class="overflow-x-auto rounded-xl border bg-white">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-gray-50 text-gray-600">
+        <tr>
+          <th class="p-3">#</th>
+          <th class="p-3">ลูกค้า</th>
+          <th class="p-3">เวลาสั่ง</th>
+          <th class="p-3">กล่อง</th>
+          <th class="p-3">ราคา</th>
+          <th class="p-3">สถานะ</th>
+
+          @if (mode === 'ในรัศมี 2 กม.') {
+            <th class="p-3">ระยะ (กม.)</th>
+          }
+
+          <th class="p-3">เส้นทาง</th>
+          <th class="p-3"></th>
+        </tr>
+      </thead>
+
+      <tbody>
+        @for (o of orders; track o.order_id) {
+          <tr class="border-t hover:bg-gray-50">
+            <td class="p-3">
+              {{ o.order_id }}
+
+              @if (o.is_mock) {
+                <span
+                  class="ml-1 rounded bg-purple-100 px-1.5 text-xs text-purple-700"
+                >
+                  mock
+                </span>
+              }
+            </td>
+
+            <td class="p-3">
+              {{ o.customer.first_name }}
+              {{ o.customer.last_name }}
+            </td>
+
+            <td class="p-3 text-gray-500">
+              {{ o.order_date }}
+            </td>
+
+            <td class="p-3">
+              <div class="flex items-center gap-1">
+                <button
+                  (click)="minus(o)"
+                  [disabled]="o.quantity_boxes <= 1"
+                  class="h-7 w-7 rounded border disabled:opacity-30"
+                >
+                  −
+                </button>
+
+                <select
+                  [ngModel]="o.quantity_boxes"
+                  (ngModelChange)="setBoxes(o, $event)"
+                  class="rounded border p-1"
+                >
+                  <option [ngValue]="1">1</option>
+                  <option [ngValue]="2">2</option>
+                  <option [ngValue]="3">3</option>
+                </select>
+
+                <button
+                  (click)="plus(o)"
+                  [disabled]="o.quantity_boxes >= 3"
+                  class="h-7 w-7 rounded border disabled:opacity-30"
+                >
+                  +
+                </button>
+              </div>
+            </td>
+
+            <td class="p-3">
+              {{ o.total_price }} ฿
+            </td>
+
+            <td class="p-3">
+              @if (o.route_id) {
+                <span
+                  class="rounded bg-green-100 px-2 py-0.5 text-xs text-green-700"
+                >
+                  จัดแล้ว จุดที่ {{ o.stop_seq }}
+                </span>
+              } @else {
+                <span
+                  class="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
+                >
+                  รอจัด
+                </span>
+              }
+            </td>
+
+            @if (mode === 'ในรัศมี 2 กม.') {
+              <td class="p-3">
+                {{ o.distance_km }}
+              </td>
+            }
+
+            <td class="p-3">
+              <button
+                (click)="showRoute(o)"
+                [disabled]="routeLoading"
+                class="whitespace-nowrap rounded border border-blue-300 px-2 py-1 text-blue-700 disabled:opacity-50"
+              >
+                ดูเส้นทาง
+              </button>
+            </td>
+
+            <td class="p-3 text-right">
+              <button
+                (click)="remove(o)"
+                class="text-red-600 hover:underline"
+              >
+                ลบ
+              </button>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="9" class="p-6 text-center text-gray-500">
+              ยังไม่มีออเดอร์ ลองกด "จำลอง"
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
 </div>
